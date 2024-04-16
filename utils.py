@@ -1,12 +1,13 @@
 import numpy as np
-from typing import Union
-from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import time
+
 import torch
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
 
-def tensor_info(tensor: object, name: str) -> None:
+
+def tensor_info(tensor: object, name: str, decorator=True) -> None:
     """
     Print information about the tensor.
 
@@ -14,16 +15,18 @@ def tensor_info(tensor: object, name: str) -> None:
         tensor (Union[np.ndarray, DataLoader, torch.Tensor, tf.Tensor]): The tensor to inspect.
         name (str): The name of the tensor.
     """
-    print(f"==================== {name} | tensor_info ====================")
+    if decorator:
+        print(f"==================== {name} | tensor_info ====================")
     print(f"Type: {type(tensor)}")
 
     # For DataLoaders:
-    if isinstance(tensor, DataLoader):
+    if isinstance(tensor, torch.utils.data.DataLoader):
         print(f"Batch size: {tensor.batch_size}")
-        for X, y in tensor:
-            print(f"Shape of features in first batch: {X.shape}")
-            print(f"Shape of labels in first batch: {y.shape} {y.dtype}")
-            break
+        X, y = next(iter(tensor))
+        print("-- First batch of features")
+        tensor_info(X, "features", decorator=False)
+        print("-- First batch of labels")
+        tensor_info(y, "labels", decorator=False)
 
     # For np arrays, torch tensors, and tensorflow tensors:
     if isinstance(tensor, (np.ndarray, torch.Tensor, tf.Tensor)):
@@ -31,13 +34,25 @@ def tensor_info(tensor: object, name: str) -> None:
         if tensor.ndim == 0:  # Scalar
             print(f"Content: {tensor}")
         elif tensor.ndim == 1 or (tensor.ndim == 2 and tensor.shape[0] == 1):  # 1D or 1xN 2D
-            print(f"Content: {tensor}")
+            print(f"Content: {tensor[:20]}")
+            if(len(tensor) > 20):
+                print("... (showing only the first 20 elements)")
         elif tensor.ndim == 2: # NxM 2D
-            print(f"{name}[0]: {tensor[0]}")
+            if tensor.shape[0] == tensor.shape[1]: # Square! image?
+                draw_image(tensor, label=name, size=1)
+            else: 
+                print(f"{name}[0]: {tensor[0]}")
+        elif tensor.ndim == 3: # NxMxP 3D
+            if tensor.shape[1] == tensor.shape[2]:  # Square! image?
+                draw_image(tensor[0], label=f"{name}[0]", size=1)
+        elif tensor.ndim == 4: # NxMxPxQ 4D
+            if tensor.shape[2] == tensor.shape[3]:  # Square! image batch?
+                draw_image(tensor[0][0], label=f"{name}[0]", size=1)
+
 
     print("")
 
-def draw_image(img: np.ndarray, label: str = None) -> None:
+def draw_image(img: np.ndarray, label: str = None, size: int = None) -> None:
     """
     Display an image.
 
@@ -45,9 +60,11 @@ def draw_image(img: np.ndarray, label: str = None) -> None:
         img (np.ndarray): The image to display.
         label (str, optional): The label for the image. Defaults to None.
     """
+    if size is not None:
+        plt.figure(figsize=(size, size))
     plt.title(label)
     plt.axis("off")
-    plt.imshow(img.squeeze(), cmap="gray")
+    plt.imshow(img.squeeze(), cmap=plt.cm.binary)
     plt.show()
 
 def draw_grid(images: np.ndarray, labels: list = None) -> None:
@@ -63,9 +80,9 @@ def draw_grid(images: np.ndarray, labels: list = None) -> None:
     for i in range(1, cols * rows + 1):
         figure.add_subplot(rows, cols, i)
         if labels is not None:
-            plt.title(str(labels[i]))
+            plt.title(str(labels[i-1]))
         plt.axis("off")
-        plt.imshow(images[i].squeeze(), cmap="gray")
+        plt.imshow(images[i-1].squeeze(), cmap=plt.cm.binary)
     plt.show()
 
 def batch_accuracy(y_hat: torch.Tensor, y: torch.Tensor) -> float:
@@ -141,3 +158,14 @@ def model_eval(model, test_tuple=None, test_dataloader=None, metrics=['accuracy'
             print(f"Test loss: {loss.item()} | Test accuracy: {test_accuracy}")
     else:
         raise ValueError("model must be a Keras or PyTorch model")
+    
+def function_race (functions: list, inputs: list):
+    for function in functions:
+        try:
+            t0 = time.time()
+            print(f"Trying {function.__name__}")
+            output = function(*inputs)
+            print(f"{function.__name__} succeeded")
+            print("Took: {0:.5f} s\n".format(time.time() - t0))
+        except Exception as e:
+            print(f"{function.__name__} failed: {e}")
