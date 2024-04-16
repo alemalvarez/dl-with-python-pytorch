@@ -5,9 +5,10 @@ import time
 import torch
 import tensorflow as tf
 
+# Utils file with some useful helper functions when working with tensors and models.
+# They are nice to have, specially if you're starting.
 
-
-def tensor_info(tensor: object, name: str, decorator=True) -> None:
+def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
     """
     Print information about the tensor.
 
@@ -38,16 +39,19 @@ def tensor_info(tensor: object, name: str, decorator=True) -> None:
             if(len(tensor) > 20):
                 print("... (showing only the first 20 elements)")
         elif tensor.ndim == 2: # NxM 2D
-            if tensor.shape[0] == tensor.shape[1]: # Square! image?
-                draw_image(tensor, label=name, size=1)
-            else: 
-                print(f"{name}[0]: {tensor[0]}")
+            print(f"{name}[0]: {tensor[0][:20]}")
+            if(len(tensor) > 20):
+                print("... (showing only the first 20 elements)")
+            if image:
+                draw_image(np.array(tensor), label=name, size=1)
         elif tensor.ndim == 3: # NxMxP 3D
             if tensor.shape[1] == tensor.shape[2]:  # Square! image?
-                draw_image(tensor[0], label=f"{name}[0]", size=1)
+                if image:
+                    draw_image(tensor[0], label=f"{name}[0]", size=1)
         elif tensor.ndim == 4: # NxMxPxQ 4D
             if tensor.shape[2] == tensor.shape[3]:  # Square! image batch?
-                draw_image(tensor[0][0], label=f"{name}[0]", size=1)
+                if image: 
+                    draw_image(tensor[0][0], label=f"{name}[0]", size=1)
 
 
     print("")
