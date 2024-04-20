@@ -34,7 +34,7 @@ def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
         print(f"Shape: {tensor.shape} | nDims: {tensor.ndim} | dtype: {tensor.dtype}")
         if tensor.ndim == 0:  # Scalar
             print(f"Content: {tensor}")
-        elif tensor.ndim == 1 or (tensor.ndim == 2 and tensor.shape[0] == 1):  # 1D or 1xN 2D
+        elif tensor.ndim == 1 or (tensor.ndim == 2 and (tensor.shape[0] == 1 or tensor.shape[1] == 1)):  # 1D or 1xN 2D
             print(f"Content: {tensor[:20]}")
             if(len(tensor) > 20):
                 print("... (showing only the first 20 elements)")
@@ -53,7 +53,16 @@ def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
                 if image: 
                     draw_image(tensor[0][0], label=f"{name}[0]", size=1)
 
+    # For torch Tensors:
+    if isinstance(tensor, torch.Tensor):
+        if(tensor.requires_grad and tensor.grad is not None):
+            print("-- Gradient:")
+            tensor_info(tensor.grad, "gradient", decorator=False, image=False)
 
+    # For tensorflow Variables:
+    if isinstance(tensor, tf.Variable):
+        print(f"Shape: {tensor.shape} | dtype: {tensor.dtype}")
+        print(f"Content: {tensor.numpy()}")
     print("")
 
 def draw_image(img: np.ndarray, label: str = None, size: int = None) -> None:
