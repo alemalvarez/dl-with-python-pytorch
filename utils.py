@@ -25,12 +25,12 @@ def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
 
     # For DataLoaders:
     if isinstance(tensor, torch.utils.data.DataLoader):
-        print(f"Batch size: {tensor.batch_size}")
+        print(f"Batch size: {tensor.batch_size} | N batches: {len(tensor)} ")
         X, y = next(iter(tensor))
         print("-- First batch of features")
-        tensor_info(X, "features", decorator=False)
+        tensor_info(X, "features", decorator=False, image=image)
         print("-- First batch of labels")
-        tensor_info(y, "labels", decorator=False)
+        tensor_info(y, "labels", decorator=False, image=image)
 
     # For np arrays, torch tensors, and tensorflow tensors:
     if isinstance(tensor, (np.ndarray, torch.Tensor, tf.Tensor)):
@@ -38,7 +38,10 @@ def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
         if tensor.ndim == 0:  # Scalar
             print(f"Content: {tensor}")
         elif tensor.ndim == 1 or (tensor.ndim == 2 and (tensor.shape[0] == 1 or tensor.shape[1] == 1)):  # 1D or 1xN 2D
-            print(f"Content: {np.ndarray.flatten(tensor[:20])}")
+            if isinstance(tensor, torch.Tensor):
+                print(f"Content: {torch.flatten(tensor[:20])}")
+            else:
+                print(f"Content: {np.ndarray.flatten(tensor[:20])}")
             if(len(tensor) > 20):
                 print("... (showing only the first 20 elements)")
         elif tensor.ndim == 2: # NxM 2D
@@ -215,3 +218,34 @@ def draw_training_history(history: History):
         axes[i].set_xlabel("Epoch")
         axes[i].set_ylabel(key)
     plt.show()
+
+def keras_comparer (models: list, X_train, y_train, X_test, y_test, val_data=None, epochs=10, batch_size=32, ):
+    """
+    Compare multiple Keras models.
+
+    Args:
+        models (list): A list of Keras models to compare.
+    """
+    print(f"==================== Comparing {len(models)} Keras models ====================")
+    print(f"Epochs: {epochs} | Batch size: {batch_size}")
+    for model in models:
+        # Check if a model has been compiled
+        if not model.optimizer:
+            raise ValueError(f"Model '{model.name}' has not been compiled")
+        t0 = time.time()
+        model.build(X_train.shape)
+        print(f"\nTraining model '{model.name}' with {model.count_params()} parameters")
+        model.fit(
+            X_train,
+            y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=val_data,
+            verbose=0
+        )
+        print(f"Training took: {time.time() - t0:.5f} s")
+        draw_training_history(model.history)
+        results = model.evaluate(X_test, y_test, verbose=0)
+        print(f"Testing evaluation for model '{model.name}':")
+        for metric, value in zip(model.metrics_names, results):
+            print(f"{metric}: {value}")
