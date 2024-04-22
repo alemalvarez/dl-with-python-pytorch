@@ -4,6 +4,9 @@ import time
 
 import torch
 import tensorflow as tf
+import tensorflow.keras as keras
+
+from keras.src.callbacks import History
 
 # Utils file with some useful helper functions when working with tensors and models.
 # They are nice to have, specially if you're starting.
@@ -35,12 +38,12 @@ def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
         if tensor.ndim == 0:  # Scalar
             print(f"Content: {tensor}")
         elif tensor.ndim == 1 or (tensor.ndim == 2 and (tensor.shape[0] == 1 or tensor.shape[1] == 1)):  # 1D or 1xN 2D
-            print(f"Content: {tensor[:20]}")
+            print(f"Content: {np.ndarray.flatten(tensor[:20])}")
             if(len(tensor) > 20):
                 print("... (showing only the first 20 elements)")
         elif tensor.ndim == 2: # NxM 2D
             print(f"{name}[0]: {tensor[0][:20]}")
-            if(len(tensor) > 20):
+            if(len(tensor[0]) > 20):
                 print("... (showing only the first 20 elements)")
             if image:
                 draw_image(np.array(tensor), label=name, size=1)
@@ -172,7 +175,21 @@ def model_eval(model, test_tuple=None, test_dataloader=None, metrics=['accuracy'
     else:
         raise ValueError("model must be a Keras or PyTorch model")
     
-def function_race (functions: list, inputs: list):
+def function_race(functions: list, inputs: list):
+    """
+    Executes a race between multiple functions, measuring their execution time.
+
+    Args:
+        functions (list): A list of functions to race.
+        inputs (list): A list of inputs to pass to each function.
+
+    Returns:
+        None: This function does not return any value.
+
+    Raises:
+        Exception: If any of the functions raise an exception during execution.
+
+    """
     for function in functions:
         try:
             t0 = time.time()
@@ -182,3 +199,19 @@ def function_race (functions: list, inputs: list):
             print("Took: {0:.5f} s\n".format(time.time() - t0))
         except Exception as e:
             print(f"{function.__name__} failed: {e}")
+
+def draw_training_history(history: History):
+    """
+    Draw the training history of a Keras model.
+
+    Args:
+        history (keras.src.callbacks.History): The history object of a Keras model.
+    """
+    fig, axes = plt.subplots(1, len(history.history), figsize=(20, 5))
+    fig.suptitle(history.model.name, fontsize=16)
+    for i, key in enumerate(history.history.keys()):
+        axes[i].plot(history.history[key])
+        axes[i].set_title(key)
+        axes[i].set_xlabel("Epoch")
+        axes[i].set_ylabel(key)
+    plt.show()
