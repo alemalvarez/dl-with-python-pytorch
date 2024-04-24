@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import time
 
 import torch
-import tensorflow as tf
 import tensorflow.keras as keras
+import tensorflow as tf
+
 
 from keras.src.callbacks import History
 
