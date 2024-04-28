@@ -12,6 +12,30 @@ from keras.src.callbacks import History
 # Utils file with some useful helper functions when working with tensors and models.
 # They are nice to have, specially if you're starting.
 
+def make_dataloader(X_list: list, y_list: list, batch_size: int = 32, shuffle: bool = True, X_type="float32", y_type="float32") -> torch.utils.data.DataLoader:
+    """
+    Create a PyTorch DataLoader from a list of samples and labels.
+
+    Args:
+        X (list): A list of samples.
+        y (list): A list of labels.
+        batch_size (int, optional): The batch size. Defaults to 32.
+        shuffle (bool, optional): Whether to shuffle the data. Defaults to True.
+        X_type (str, optional): The type of the samples. Defaults to "float32".
+        y_type (str, optional): The type of the labels. Defaults to "float32".
+
+    Returns:
+        torch.utils.data.DataLoader: A PyTorch DataLoader.
+    """
+    for X, y in zip(X_list, y_list):
+        if len(X) != len(y):
+            raise ValueError("X and y must have the same length")
+        dataset = []
+        for i in range(len(X)):
+            dataset.append((X[i].astype(X_type), y[i].astype(y_type)))
+        
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
 def tensor_info(tensor: object, name: str, decorator=True, image=True) -> None:
     """
     Print information about the tensor.
